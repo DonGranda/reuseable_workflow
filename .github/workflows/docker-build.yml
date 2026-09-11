@@ -1,4 +1,4 @@
-name: Reusable Docker Build and Push
+name: Reusable Docker Build and Push To ACR
 
 on:
   workflow_call:
