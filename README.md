@@ -71,7 +71,7 @@ permissions:
 
 jobs:
   build:
-    uses: DonGranda/reuseable_workflow/.github/workflows/docker-build.yml@main
+    uses: DonGranda/reuseable_workflow/.github/workflows/docker-build.yml@v1.0.0
     with:
       acr-name: myacr
       acr-login-server: myacr.azurecr.io
@@ -112,7 +112,7 @@ on:
 
 jobs:
   test:
-    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-test.yml@main
+    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-test.yml@v1.0.0
     with:
       java-version: 21
       java-distro: temurin
@@ -143,7 +143,7 @@ on:
 
 jobs:
   package:
-    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-package.yml@main
+    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-package.yml@v1.0.0
     with:
       java-version: 21
       java-distro: temurin
@@ -158,7 +158,7 @@ Example of using the output:
 ```yaml
 jobs:
   package:
-    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-package.yml@main
+    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-package.yml@v1.0.0
     with:
       java-version: 21
       java-distro: temurin
