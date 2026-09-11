@@ -1,0 +1,59 @@
+name: Reusable Maven Package
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: "Java Version"
+        required: true
+        type: string
+      java-distro:
+        description: "Java Distribution"
+        required: true
+        type: string
+    outputs:
+      app_version:
+        description: "App version extracted from the pom.xml"
+        value: ${{ jobs.maven-package.outputs.app_version }}
+
+jobs:
+  maven-package:
+    runs-on: ubuntu-latest
+    name: Package with Maven
+    outputs:
+      app_version: ${{ steps.extract_version.outputs.VERSION }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup JDK
+        uses: actions/setup-java@v6.0.1
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: ${{ inputs.java-distro }}
+
+      - name: Cache Maven packages
+        uses: actions/cache@v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Give execute permission to mvnw
+        run: chmod +x mvnw
+
+      - name: Build package (skip tests)
+        run: ./mvnw clean package -DskipTests
+
+      - name: Extract project version
+        id: extract_version
+        run: echo "VERSION=$(./mvnw -q -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v7.0
+        with:
+          name: app-jar
+          path: target/*.jar

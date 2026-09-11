@@ -1,0 +1,92 @@
+name: Reusable Mvn bild and de
+
+on:
+  workflow_call:
+    inputs:
+      maven-command:
+        description: "Maven Command to Run"
+        required: true 
+        type: string
+
+      java-version: 
+        description: "Java Version"
+        required: true 
+        type: string 
+      java-distro:
+        description: "What Java Discription"
+        required: true 
+        type: string 
+
+
+    outputs:
+      app_version:
+        description: "App version extracted from the pom.xml"
+        value: ${{jobs.maven-job.outputs.app_version}}
+
+jobs: 
+  maven-job:
+    runs-on: ubuntu-latest
+    name: Setup java maven
+    outputs:
+      app_version: ${{steps.extract_version.outputs.VERSION}}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{inputs.java-version}}
+          distribution: ${{inputs.java-distro}}
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Give execute permission to mvnw
+        run: chmod +x mvnw
+
+      - name: Run maven
+        run: ./mvnw ${{inputs.maven-command}}
+
+      - name: Upload test report
+        if: ${{inputs.maven-command == 'clean test'}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvn-test-results
+          path: target/surefire-reports
+
+      - name: Extract project version
+        if: ${{inputs.maven-command == 'clean package -DskipTests'}}
+        id: extract_version
+        run: echo "VERSION=$(./mvnw -q -Dexec.executable='echo' -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+
+      - name: Upload JAR
+        if: ${{inputs.maven-command == 'clean package -DskipTests'}}
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: target/*.jar
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Login to ACR
+        run: az acr login --name ${{ inputs.acr-name }}
+
+      - name: Build Docker image
+        run: docker build -t ${{ inputs.acr-login-server }}/${{ inputs.image-name }}:${{ github.run_number }} .
+
+      - name: Push Docker image
+        run: docker push ${{ inputs.acr-login-server }}/${{ inputs.image-name }}:${{ github.run_number }}
+        
