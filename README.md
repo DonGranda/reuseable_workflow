@@ -60,26 +60,10 @@ Then create `.github/workflows/build.yml` in the Go project.
 
 ```yaml
 name: Build Go App
-
-on:
-  push:
-    branches: [main]
-
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   build:
     uses: DonGranda/reuseable_workflow/.github/workflows/docker-build.yml@v1.0.0
-    with:
-      acr-name: myacr
-      acr-login-server: myacr.azurecr.io
-      image-name: mygoapp
-    secrets:
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+ 
 ```
 
 The reusable workflow will checkout the project, login to Azure, login to ACR, build the Docker image and push it to ACR.
