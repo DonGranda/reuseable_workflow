@@ -106,11 +106,9 @@ jobs:
           fi
 
       - name: Helm lint
-        run: |
-          helm lint ./k8s/helm/go-test
+        run: helm lint ./k8s/helm/go-test
 
       - name: Helm install or upgrade
-        if: inputs.helm_action == 'install'
         run: |
           helm upgrade --install go-test ./k8s/helm/go-test \
             --namespace ${{ steps.ns.outputs.namespace }} \
