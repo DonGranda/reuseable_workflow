@@ -94,7 +94,7 @@ jobs:
           cluster-name: ${{ vars.AKS_CLUSTER_NAME }}
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
 
       - name: Compute namespace
         id: ns
