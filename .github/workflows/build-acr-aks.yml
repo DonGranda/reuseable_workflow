@@ -1,6 +1,13 @@
+name: Build and Push to ACR and Deploy to AKS
+
 on:
   workflow_call:
     inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: string
+
       helm_action:
         description: "Helm action to perform"
         required: false
@@ -10,8 +17,10 @@ on:
     secrets:
       AZURE_CLIENT_ID:
         required: true
+
       AZURE_TENANT_ID:
         required: true
+
       AZURE_SUBSCRIPTION_ID:
         required: true
 
@@ -30,14 +39,19 @@ permissions:
 
 jobs:
   docker-build-push:
-    runs-on: ubuntu-latest
+
     name: Build and push Docker image
+
+    runs-on: ubuntu-latest
+
+    environment: ${{ inputs.environment }}
 
     outputs:
       IMAGE_NAME: ${{ steps.IMG_Name.outputs.IMAGE_NAME }}
       VERSION_NUMBER: ${{ steps.IMG_Name.outputs.tag_number }}
 
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v7.0.1
         with:
@@ -51,13 +65,16 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Login to ACR
-        run: az acr login --name ${{ vars.ACR_NAME }}
+        run: |
+          az acr login --name ${{ vars.ACR_NAME }}
 
       - name: Set Image Name and Version Number
         id: IMG_Name
         run: |
           IMAGE_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+
           echo "IMAGE_NAME=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+
           echo "tag_number=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
       - name: Build Docker image
@@ -89,7 +106,8 @@ jobs:
           fi
 
       - name: Helm lint
-        run: helm lint ./k8s/helm/go-test
+        run: |
+          helm lint ./k8s/helm/go-test
 
       - name: Helm install or upgrade
         if: inputs.helm_action == 'install'
