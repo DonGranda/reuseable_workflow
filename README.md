@@ -2,14 +2,9 @@
 
 Reusable GitHub Actions workflows for common CI tasks.
 
-## Table of Contents
 
-1. [Docker Build and Push](#docker-build-and-push)
-2. [Maven Test](#maven-test)
-3. [Maven Package](#maven-package)
-4. [Azure Setup](#azure-setup)
 
-## Docker Build and Push
+## Docker Build and Push to AKS via Helm 
 
 Workflow file:
 
@@ -60,9 +55,30 @@ Then create `.github/workflows/build.yml` in the Go project.
 
 ```yaml
 name: Build Go App
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: choice
+        options:
+          - DEV
+          - UAT
+          - PROD
+        default: DEV
+
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
-    uses: DonGranda/reuseable_workflow/.github/workflows/docker-build.yml@v1.0.0
+    uses: DonGranda/reuseable_workflow/.github/workflows/build-acr-aks.yml@v2.0.0
+    secrets: inherit
+    with:
+      environment: ${{ inputs.environment }}
  
 ```
 
@@ -75,85 +91,6 @@ myacr.azurecr.io/mygoapp:25
 ```
 
 The number comes from the GitHub Actions run number.
-
-## Maven Test
-
-Workflow file:
-
-```text
-.github/workflows/mvn-test.yml
-```
-
-Use this for a Java project that uses Maven.
-
-Example:
-
-```yaml
-name: Java Tests
-
-on:
-  pull_request:
-
-jobs:
-  test:
-    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-test.yml@v1.0.0
-    with:
-      java-version: 21
-      java-distro: temurin
-```
-
-The workflow will setup Java, cache Maven packages, run the tests and upload the test report.
-
-Your project should have `pom.xml` and `mvnw`.
-
-## Maven Package
-
-Workflow file:
-
-```text
-.github/workflows/mvn-package.yml
-```
-
-Use this when you want to build a JAR from a Maven project.
-
-Example:
-
-```yaml
-name: Java Package
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  package:
-    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-package.yml@v1.0.0
-    with:
-      java-version: 21
-      java-distro: temurin
-```
-
-The workflow will run Maven package with tests skipped and upload the JAR as an artifact.
-
-It also returns the project version as `app_version`.
-
-Example of using the output:
-
-```yaml
-jobs:
-  package:
-    uses: DonGranda/reuseable_workflow/.github/workflows/mvn-package.yml@v1.0.0
-    with:
-      java-version: 21
-      java-distro: temurin
-
-  show-version:
-    needs: package
-    runs-on: ubuntu-latest
-    steps:
-      - name: Show version
-        run: echo "Version is ${{ needs.package.outputs.app_version }}"
-```
 
 ## Azure Setup
 
@@ -176,8 +113,6 @@ AcrPush
 ```
 
 Your Azure App Registration also needs a federated credential for GitHub Actions OIDC.
-
-
 
 ## References 
 
